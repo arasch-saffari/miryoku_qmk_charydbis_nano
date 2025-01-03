@@ -1,0 +1,44 @@
+name: Build QMK Firmware
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up QMK environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip git
+          pip3 install qmk
+
+      - name: Clone QMK Firmware
+        run: |
+          git clone https://github.com/qmk/qmk_firmware.git
+          cd qmk_firmware
+          git checkout master
+
+      - name: Copy Miryoku keymap
+        run: |
+          mkdir -p qmk_firmware/keyboards/bastardkb/charybdis_3x5/keymaps/manna_harbour_miryoku
+          cp -r users/manna-harbour_miryoku/* qmk_firmware/keyboards/bastardkb/charybdis_3x5/keymaps/manna_harbour_miryoku/
+
+      - name: Build Firmware
+        run: |
+          cd qmk_firmware
+          qmk setup
+          qmk compile -kb bastardkb/charybdis_3x5 -km manna_harbour_miryoku
+
+      - name: Upload Firmware
+        uses: actions/upload-artifact@v3
+        with:
+          name: charybdis_nano_firmware
+          path: qmk_firmware/*.hex
